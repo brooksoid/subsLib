@@ -2,6 +2,8 @@
 // BoundingBox2D.js - noddy 2D bounding box class
 // Matt Brooks
 
+// Just making a change to see how it's reflected across submodules...
+
 define(function() {
 	'use strict';
 
