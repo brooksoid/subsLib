@@ -33,7 +33,7 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 
 		this.subtitles = subtitleData;
 		this.canvas = null;
-		this.hasPrecalculatedPositions = false;
+		this.usePrecalculatedPositions = false;
 
 		// Process subtitle timecodes (they're from the original TTML and we want them in seconds
 		// Also fix up prototypes - subtitleData may have just been deserialised from JSON
@@ -45,6 +45,10 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 			return secs;
 		};
 
+		var hasBounds = false;
+
+		var that = this;
+
 		this.subtitles.forEach(function(elem) {
 			elem.beginSecs = videosub_tcsecs(elem.begin);
 			elem.endSecs = videosub_tcsecs(elem.end);
@@ -53,6 +57,7 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 	//		elem.__proto__ = SpanPosition.prototype;
 	//		if ('bounds' in elem)
 	//			elem.bounds.__proto__ = BoundingBox2D.prototype;
+
 			elem.spans.forEach(function(span) {
 				if (span.hasOwnProperty('position'))
 				{
@@ -62,13 +67,23 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 						span.position.bounds.__proto__ = BoundingBox2D.prototype;
 					}
 				}
+				if (!that.usePrecalculatedPositions)
+				{
+					if (span.hasOwnProperty('bounds'))
+					{
+						console.log("HAS BOUNDS");
+						that.usePrecalculatedPositions = true;
+					}
+				}
 			});
 		});
-		if ("bounds" in this.subtitles[0].spans[0])	// Originated from JSON therefore positions already calculated. Use them.
-		{
-			console.log("Using preecalculated positions");
-			this.usePrecalculatedPositions = true;			
-		}
+
+		// Made change in eyeVis from "bounds" to "position"
+		// if ("position" in this.subtitles[0].spans[0])	// Originated from JSON therefore positions already calculated. Use them.
+		// {
+		// 	console.log("Using preecalculated positions");
+		// 	this.usePrecalculatedPositions = true;			
+		// }
 			
 	}
 
@@ -193,7 +208,11 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 	Subtitles.prototype.renderAtDefaultPosition = function (elem, canvas, lineHeight) {
 
 		var ctx = canvas.getContext('2d');
-		var fixedHeight = this.canvas.height, fixedWidth = this.canvas.width;
+
+		//in subsEyeVis, this.canvas is NULL. 
+
+		//var fixedHeight = this.canvas.height, fixedWidth = this.canvas.width;
+		var fixedHeight = canvas.height, fixedWidth = canvas.width;
 
 		var lowerMargin = lineHeight * 2;
 		var x = fixedWidth / 2;
@@ -286,6 +305,33 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 		console.log("calculateBoundaryCrosses numCrossings:" + numCrossings);
 	};
 
+	//from subsEditor.js
+	Subtitles.prototype.renderIplayerStyle = function(elem, canvas)
+	{
+		var ctx = canvas.getContext('2d');
+		ctx.lineWidth = 1;
+//		var relativeSize = subsEditor.canvas.width / subsEditor.videoElement.videoWidth;//MRBTODO this was at 1280.0 - I think subsEditor.videoElement.videoWidth is what I want...
+		var relativeSize = 1;
+		var fS = 28 * relativeSize;
+
+		var fSS = fS+"px";
+		var fontSpecifier = fSS + " '" + "Helvetica Neue" + "'";
+		ctx.font = fontSpecifier;// "'TiresiasS'";
+
+		ctx.textBaseline = "top"; //going fullscreen resets this!
+		ctx.strokeStyle = "black";
+		ctx.textAlign = "left";
+
+		elem.spans.forEach(function(span)
+		{
+			ctx.fillStyle = "white";
+			//Iplayer style text - black text outline
+			ctx.lineWidth = 5;
+			ctx.strokeText(span.text, span.position.x * canvas.width, span.position.y * canvas.height);
+			ctx.fillText(span.text, span.position.x * canvas.width, span.position.y * canvas.height);
+		});		
+	};
+
 	// eyevis needs this function
 	Subtitles.prototype.renderAtPrecalculatedPosition = function (elem, canvas) {
 		var relativeSize = canvas.width / 1024;
@@ -309,10 +355,11 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 		});
 	};
 
-
 	// eyevis needs this function
-	Subtitles.prototype.renderAtTime = function(t, canvas) 
+	Subtitles.prototype.renderAtTime = function(t, canvas, showSubtitles) 
 	{
+		showSubtitles = showSubtitles || ""; //null parameter handling, for subsPresenter rather than subsEyevis?
+
 		var nextSubtitleIndex = -1;
 
 		for (var i = 0, n = this.subtitles.length; i < n; i++)
@@ -326,13 +373,38 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 
 		if (nextSubtitleIndex != -1)
 		{
-			if (this.usePrecalculatedPositions)
-				this.renderAtPrecalculatedPosition(this.subtitles[nextSubtitleIndex], canvas);
+			if (showSubtitles.length)
+			{
+				// Control which subs are shown through showSubtitles string
+				// eyevis stuff
+
+				if (showSubtitles.indexOf("Ceefax") != -1)
+				{
+					this.renderAtPrecalculatedPosition(this.subtitles[nextSubtitleIndex], canvas);
+				}
+
+				if (showSubtitles.indexOf("iPlayer") != -1)
+				{
+					//We may need to render the subtitle twice, depending on the showSubtitles control string
+					if (showSubtitles.indexOf("Positioned") != -1)
+						this.renderIplayerStyle(this.subtitles[nextSubtitleIndex], canvas);	
+
+					if (showSubtitles.indexOf("Regular") != -1)
+						this.renderAtDefaultPosition(this.subtitles[nextSubtitleIndex], canvas, 32); //MRBTODO
+				}
+			}
 			else
-				this.renderAtDefaultPosition(this.subtitles[nextSubtitleIndex], canvas);
+			{
+				//Control using data analysis - will this code now be redundant?
+				if (this.usePrecalculatedPositions)
+					this.renderAtPrecalculatedPosition(this.subtitles[nextSubtitleIndex], canvas);
+				else
+				{
+					this.renderIplayerStyle(this.subtitles[nextSubtitleIndex], canvas);
+				}
+			}
 		}		
 	};
-
 
 	// eyevis needs this function
 	// This is used from gensubpos.html to store text metrics back to subtitle JSON
