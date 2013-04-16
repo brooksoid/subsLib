@@ -224,6 +224,24 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 		ctx.textAlign = "center";
 
 
+		// This code ensures regular positioned iPlayer style subs have correct font etc
+		ctx.lineWidth = 1;
+//		var relativeSize = subsEditor.canvas.width / subsEditor.videoElement.videoWidth;//MRBTODO this was at 1280.0 - I think subsEditor.videoElement.videoWidth is what I want...
+		var relativeSize = 1;
+		var fS = 28 * relativeSize;
+		var fSS = fS+"px";
+		var fontSpecifier = fSS + " '" + "Helvetica Neue" + "'";
+		ctx.font = fontSpecifier;// "'TiresiasS'";
+
+		ctx.textBaseline = "top"; //going fullscreen resets this!
+		ctx.strokeStyle = "black";
+//		ctx.textAlign = "left";
+
+
+
+
+
+
 		if (0)
 		{
 			// MRBTODO - HANDLE THIS PROPER, LIKE 
@@ -313,7 +331,6 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 //		var relativeSize = subsEditor.canvas.width / subsEditor.videoElement.videoWidth;//MRBTODO this was at 1280.0 - I think subsEditor.videoElement.videoWidth is what I want...
 		var relativeSize = 1;
 		var fS = 28 * relativeSize;
-
 		var fSS = fS+"px";
 		var fontSpecifier = fSS + " '" + "Helvetica Neue" + "'";
 		ctx.font = fontSpecifier;// "'TiresiasS'";
@@ -355,11 +372,9 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 		});
 	};
 
-	// eyevis needs this function
-	Subtitles.prototype.renderAtTime = function(t, canvas, showSubtitles) 
+	// eyevis needs this function - not sure it'll get called without renderStyles
+	Subtitles.prototype.renderAtTime = function(t, canvas, renderStyles)
 	{
-		showSubtitles = showSubtitles || ""; //null parameter handling, for subsPresenter rather than subsEyevis?
-
 		var nextSubtitleIndex = -1;
 
 		for (var i = 0, n = this.subtitles.length; i < n; i++)
@@ -373,28 +388,21 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 
 		if (nextSubtitleIndex != -1)
 		{
-			if (showSubtitles.length)
+			if (renderStyles)
 			{
-				// Control which subs are shown through showSubtitles string
-				// eyevis stuff
-
-				if (showSubtitles.indexOf("Ceefax") != -1)
-				{
+				if (renderStyles.ceefax)
 					this.renderAtPrecalculatedPosition(this.subtitles[nextSubtitleIndex], canvas);
-				}
 
-				if (showSubtitles.indexOf("iPlayer") != -1)
-				{
-					//We may need to render the subtitle twice, depending on the showSubtitles control string
-					if (showSubtitles.indexOf("Positioned") != -1)
-						this.renderIplayerStyle(this.subtitles[nextSubtitleIndex], canvas);	
+				if (renderStyles.iPlayerPositioned)
+					this.renderIplayerStyle(this.subtitles[nextSubtitleIndex], canvas);	
 
-					if (showSubtitles.indexOf("Regular") != -1)
-						this.renderAtDefaultPosition(this.subtitles[nextSubtitleIndex], canvas, 32); //MRBTODO
-				}
+				if (renderStyles.iPlayerRegular)
+					this.renderAtDefaultPosition(this.subtitles[nextSubtitleIndex], canvas, 32); //MRBTODO 32??!
 			}
 			else
 			{
+				//Eyevis needs this function - not sure it'll get called without renderStyles
+
 				//Control using data analysis - will this code now be redundant?
 				if (this.usePrecalculatedPositions)
 					this.renderAtPrecalculatedPosition(this.subtitles[nextSubtitleIndex], canvas);
