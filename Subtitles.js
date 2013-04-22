@@ -411,7 +411,8 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 					this.renderIplayerStyle(this.subtitles[nextSubtitleIndex], canvas);
 				}
 			}
-		}		
+		}
+		return nextSubtitleIndex;
 	};
 
 	// eyevis needs this function
