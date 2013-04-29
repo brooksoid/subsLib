@@ -54,10 +54,6 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 			elem.endSecs = videosub_tcsecs(elem.end);
 			elem.crossesBoundary = null;
 
-	//		elem.__proto__ = SpanPosition.prototype;
-	//		if ('bounds' in elem)
-	//			elem.bounds.__proto__ = BoundingBox2D.prototype;
-
 			elem.spans.forEach(function(span) {
 				if (span.hasOwnProperty('position'))
 				{
@@ -77,14 +73,6 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 				}
 			});
 		});
-
-		// Made change in eyeVis from "bounds" to "position"
-		// if ("position" in this.subtitles[0].spans[0])	// Originated from JSON therefore positions already calculated. Use them.
-		// {
-		// 	console.log("Using preecalculated positions");
-		// 	this.usePrecalculatedPositions = true;			
-		// }
-			
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////
@@ -143,7 +131,6 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 					numSubtitlesPositioned++;
 					var lineY = y + (lineHeight * currentLine);
 					var metrics = ctx.measureText(span.text);
-	//				var metrics = getTextMetrics(span.text, 32, fontname, ctx);
 					var halfwidth = metrics.width * 0.5;
 
 					var bb = new BoundingBox2D();
@@ -203,15 +190,16 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 		return result;
 	};
 
-	///
 
-	Subtitles.prototype.renderAtDefaultPosition = function (elem, canvas, lineHeight) {
+	Subtitles.prototype.renderAtDefaultPosition = function (elem, canvas, lineHeight, relativeSize) {
 
 		var ctx = canvas.getContext('2d');
 
 		//in subsEyeVis, this.canvas is NULL. 
 
 		//var fixedHeight = this.canvas.height, fixedWidth = this.canvas.width;
+		lineHeight *= relativeSize;
+		
 		var fixedHeight = canvas.height, fixedWidth = canvas.width;
 
 		var lowerMargin = lineHeight * 2;
@@ -226,8 +214,6 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 
 		// This code ensures regular positioned iPlayer style subs have correct font etc
 		ctx.lineWidth = 1;
-//		var relativeSize = subsEditor.canvas.width / subsEditor.videoElement.videoWidth;//MRBTODO this was at 1280.0 - I think subsEditor.videoElement.videoWidth is what I want...
-		var relativeSize = 1;
 		var fS = 28 * relativeSize;
 		var fSS = fS+"px";
 		var fontSpecifier = fSS + " '" + "Helvetica Neue" + "'";
@@ -235,11 +221,6 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 
 		ctx.textBaseline = "top"; //going fullscreen resets this!
 		ctx.strokeStyle = "black";
-//		ctx.textAlign = "left";
-
-
-
-
 
 
 		if (0)
@@ -324,12 +305,11 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 	};
 
 	//from subsEditor.js
-	Subtitles.prototype.renderIplayerStyle = function(elem, canvas)
+	Subtitles.prototype.renderIplayerStyle = function(elem, canvas, relativeSize)
 	{
 		var ctx = canvas.getContext('2d');
 		ctx.lineWidth = 1;
-//		var relativeSize = subsEditor.canvas.width / subsEditor.videoElement.videoWidth;//MRBTODO this was at 1280.0 - I think subsEditor.videoElement.videoWidth is what I want...
-		var relativeSize = 1;
+
 		var fS = 28 * relativeSize;
 		var fSS = fS+"px";
 		var fontSpecifier = fSS + " '" + "Helvetica Neue" + "'";
@@ -350,8 +330,7 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 	};
 
 	// eyevis needs this function
-	Subtitles.prototype.renderAtPrecalculatedPosition = function (elem, canvas) {
-		var relativeSize = canvas.width / 1024;
+	Subtitles.prototype.renderAtPrecalculatedPosition = function (elem, canvas, relativeSize) {
 		var fS = 32 * relativeSize;					
 		var ctx = canvas.getContext('2d');
 		ctx.font = fS + "px 'TiresiasS'";
@@ -373,7 +352,7 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 	};
 
 	// eyevis needs this function - not sure it'll get called without renderStyles
-	Subtitles.prototype.renderAtTime = function(t, canvas, renderStyles)
+	Subtitles.prototype.renderAtTime = function(t, canvas, renderStyles, relativeSize)
 	{
 		var nextSubtitleIndex = -1;
 
@@ -394,10 +373,10 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 					this.renderAtPrecalculatedPosition(this.subtitles[nextSubtitleIndex], canvas);
 
 				if (renderStyles.iPlayerPositioned)
-					this.renderIplayerStyle(this.subtitles[nextSubtitleIndex], canvas);	
+					this.renderIplayerStyle(this.subtitles[nextSubtitleIndex], canvas, relativeSize);	
 
 				if (renderStyles.iPlayerRegular)
-					this.renderAtDefaultPosition(this.subtitles[nextSubtitleIndex], canvas, 32); //MRBTODO 32??!
+					this.renderAtDefaultPosition(this.subtitles[nextSubtitleIndex], canvas, 32, relativeSize); //MRBTODO 32??!
 			}
 			else
 			{
