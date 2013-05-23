@@ -170,6 +170,19 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 	};
 
 	//////////////////////////////////////////////////////////////////////////////////////////
+	// Return subtitle by id
+
+	Subtitles.prototype.getById = function(id)
+	{
+		var filterFunction = function(elem)
+		{
+			return (elem.id === id);
+		};
+
+		return $.grep(this.subtitles, filterFunction);
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////
 	// Return list of subtitles active at this time containing point mx and my
 
 	Subtitles.prototype.pick = function(time, mx, my)
