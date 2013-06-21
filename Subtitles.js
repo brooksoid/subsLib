@@ -34,6 +34,7 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 		this.subtitles = subtitleData;
 		this.canvas = null;
 		this.usePrecalculatedPositions = false;
+		this.renderBounds = false;
 
 		// Process subtitle timecodes (they're from the original TTML and we want them in seconds
 		// Also fix up prototypes - subtitleData may have just been deserialised from JSON
@@ -152,6 +153,25 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 		console.log("numSubtitlesPositioned: " + numSubtitlesPositioned);
 	};
 
+
+	Subtitles.prototype.getFirstSubtitleAfterTime = function(time)
+	{
+		for(var i = 0; i < this.subtitles.length; i++)
+		{
+			if (this.subtitles[i].beginSecs >= time)
+				return i;
+		}
+	}
+
+	Subtitles.prototype.getLastSubtitleBeforeTime = function(time)
+	{
+		for(var i = this.subtitles.length - 1; i >= 0; i--)
+		{
+			if (this.subtitles[i].endSecs <= time)
+				return i;
+		}
+	}
+
 	//////////////////////////////////////////////////////////////////////////////////////////
 	// Return list of subtitles active at this time
 
@@ -203,6 +223,18 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 		return result;
 	};
 
+	function renderBounds(ctx, span, w, h)
+	{
+		var eyeTrackingErr = {x:0.015104194253236364, y:0.026851900894642428};
+		var readUnder = 0.06;
+		ctx.lineWidth = 1;
+		var b = span.position.bounds;
+
+		ctx.strokeStyle = "white";
+		ctx.rect((b.minx - eyeTrackingErr.x) * w, (b.miny - eyeTrackingErr.y) * h, ((b.maxx - b.minx) + (eyeTrackingErr.x*2)) * w, ((b.maxy - b.miny) + (readUnder + (eyeTrackingErr.y*2))) * h);
+		ctx.stroke();
+		ctx.strokeStyle = "black";
+	}
 
 	Subtitles.prototype.renderAtDefaultPosition = function (elem, canvas, lineHeight, relativeSize) {
 
@@ -276,6 +308,7 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 				var lineY = y + (lineHeight * currentLine);
 				ctx.strokeText(span.text, x, lineY);
 				ctx.fillText(span.text, x, lineY);
+//				renderBounds(ctx, span, canvas.width, canvas.height);
 				currentLine++;
 			});
 		}
@@ -339,6 +372,8 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 			ctx.lineWidth = 5;
 			ctx.strokeText(span.text, span.position.x * canvas.width, span.position.y * canvas.height);
 			ctx.fillText(span.text, span.position.x * canvas.width, span.position.y * canvas.height);
+
+			renderBounds(ctx, span, canvas.width, canvas.height);
 		});		
 	};
 
