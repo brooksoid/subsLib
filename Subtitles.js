@@ -100,7 +100,7 @@ define(["BoundingBox2D"], function(BoundingBox2D) {
 			this.canvas.width = 1024;
 			this.canvas.height = 576;
 			this.canvas.id = "temp";
-			$("#debug").append(this.canvas);
+			$("#debug").append(this.canvas).hide();
 
 			var c = this.canvas.getContext('2d');
 			c.font = fontSizeString + " '" + fontName + "'";
